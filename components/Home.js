@@ -9,26 +9,35 @@ import {
   View,
   Text,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  Platform
 } from 'react-native';
 
 
 const style = StyleSheet.create({
     button: {
-      backgroundColor:'#131313',
-      padding:20,
-      paddingLeft:40,
-      paddingRight:40,
-      opacity:0.6,
-      borderRadius:60,
-      borderWidth:2,
-      borderColor:'#fff'
+      backgroundColor:'#03a9f4',
+      marginLeft:40,
+      marginTop:10,
+      marginRight:40,
+      marginBottom:40,
+      flex:1,
+      alignItems:'center',
+      paddingTop:20,
+      shadowColor: '#000000',
+      shadowOffset: {
+        width: 0,
+        height: 3
+      },
+      shadowRadius: 5,
+      shadowOpacity: 0.6
     },
     buttonText: {
       color:'#fff',
-      fontSize:20,
-      fontFamily:'Helvetica Neue',
-      fontWeight:'bold'
+      fontSize:25,
+      fontFamily: Platform.OS == 'ios' ? 'Helvetica Neue' : 'Roboto',
+      fontWeight:'bold',
+
     },
     backgroundImage: {
       flex:1,
@@ -42,7 +51,7 @@ const style = StyleSheet.create({
       paddingLeft:45,
       backgroundColor: 'transparent',
       color:'#fff',
-      flex: 2,
+      flex: 4,
       flexWrap: 'nowrap',
       flexDirection: 'row',
       justifyContent: 'center',
@@ -64,12 +73,9 @@ export default class Home extends Component<{}> {
 
         <Text style={style.title}>Policija Zaustavlja!</Text>
 
-        <TouchableOpacity
+        <TouchableOpacity activeOpacity={0.8}
           style={{flex:1, justifyContent:'space-around'}}
-          onPress={() => {
-
-            Actions.map();
-          }}>
+          onPress={() => Actions.map()}>
           <View style={style.button}>
             <Text style={style.buttonText}>
               Pokret!

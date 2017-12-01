@@ -58,7 +58,8 @@ export default class Map extends Component<{}> {
         longitude: 16.840130
       },
       differentValue: "old",
-      markers: []
+      markers: [],
+      showPoliceAlert: true
     };
 
   }
@@ -86,10 +87,9 @@ export default class Map extends Component<{}> {
               }
             }}
           });
-
-          console.log(this.state);
       }
   }
+
 
   getUserLocation() {
     navigator.geolocation.getCurrentPosition((position) => {
@@ -118,32 +118,25 @@ export default class Map extends Component<{}> {
     });
 
     this.getUserLocation();
-    Backend.loadLocations((location) => {
-
+    Backend.loadLocations((locations) => {
       this.setState((oldState) => {
         return {
           ...oldState,
-          ...{
-            markers: this.append(oldState.markers, location)
-          }
+          ...{ markers: locations }
         }
-
       });
-      //console.log(this.state);
     });
 
     this.watchID = navigator.geolocation.watchPosition((position) => {
-      //console.log(position);
       this.state.markers.forEach((marker) => {
         var distance = geolib.getDistance(position.coords, marker.coordinates);
         console.log(distance);
-        if(distance < 1050) {
-          alert('Policija u blizini!');
+        if(distance < 1000) {
+          if(this.state.showPoliceAlert) {
+            alert('Policija u blizini!');
+          }
         }
       });
-
-      
-      
     }, (error) => {
         alert(JSON.stringify(error))
     }, {
@@ -161,6 +154,82 @@ export default class Map extends Component<{}> {
     }
   }
 
+  clearPolice() {
+    this.newState({showPoliceAlert: false});
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      console.log(position);
+
+      var locations = this.state.markers.filter((marker) => {
+        var dist = geolib.getDistance(position.coords, marker.coordinates);
+        console.log("Udaljenost je:" + dist);
+        return  dist <= 1000;
+
+      });
+      Backend.removeLocation(locations);
+      this.setState((oldState) => {
+        return { ...oldState,  ...{ showPoliceAlert: true }}
+      });
+    }, (error) => {
+        alert(JSON.stringify(error));
+        this.setState((oldState) => {
+          return { ...oldState,  ...{ showPoliceAlert: true }}
+        });
+    }, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 1000
+    });
+  }
+
+  newState(state) {
+    this.setState((oldState) => {
+      return { ...oldState,  ...state}
+    });
+  }
+
+  reportPolice() {
+    this.newState({showPoliceAlert: false});
+    console.log(this.state);
+ 
+    navigator.geolocation.getCurrentPosition((position) => {
+      console.log(position);
+      var key = 'AIzaSyCKtwSeiP3GbZJIVZ3A0Wi3ziLRB-MJe_I';
+
+      fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?key=${key}&latlng=${position.coords.latitude},${position.coords.longitude}`)
+          .then((res) => res.json())
+          .then((json) => {
+            if (json.status !== 'OK') {
+              throw new Error(`Geocode error: ${json.status}`);
+            }
+  
+            Backend.sendLocation({
+              name: json.results[0].formatted_address,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+
+            //console.log(json);
+            this.newState({showPoliceAlert: true});
+            //return json;
+          });
+
+
+    }, (error) => {
+        alert(JSON.stringify(error));
+        this.setState((oldState) => {
+          return { ...oldState,  ...{ showPoliceAlert: true }}
+        });
+    }, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 1000
+    });
+
+   
+  }
+
   render() {
     return(
       <View style={styles.container}>
@@ -174,10 +243,12 @@ export default class Map extends Component<{}> {
             />
           ))}
         </MapView>
-        <TouchableOpacity style={styles.theCopsButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.theCopsButton} activeOpacity={0.8}
+          onPress={() => this.reportPolice()}>
           <Text style={styles.theCopsButtonText}>Policija!!!</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.allClearButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.allClearButton} activeOpacity={0.8}
+        onPress={() => this.clearPolice()}>
           <Text style={styles.allClearButtonText}>Sve čisto!</Text>
         </TouchableOpacity>
       </View>
